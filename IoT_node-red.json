@@ -1,0 +1,457 @@
+[
+    {
+        "id": "f35383b4c5a849d4",
+        "type": "tab",
+        "label": "ESP32 Live Dashboard (Meera)",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "93480a18711a2983",
+        "type": "mqtt in",
+        "z": "f35383b4c5a849d4",
+        "name": "Receive Env Data",
+        "topic": "esp32meera/evt/status/fmt/json",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker_1",
+        "inputs": 0,
+        "x": 130,
+        "y": 120,
+        "wires": [
+            [
+                "5202ca7c5c5c143c"
+            ]
+        ]
+    },
+    {
+        "id": "5202ca7c5c5c143c",
+        "type": "json",
+        "z": "f35383b4c5a849d4",
+        "name": "Parse JSON",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 330,
+        "y": 120,
+        "wires": [
+            [
+                "9d905f4fbcf5f544",
+                "6807aa56c546e2d2",
+                "0fa5d6a22f07b157",
+                "2fe149e2f7b7468b"
+            ]
+        ]
+    },
+    {
+        "id": "9d905f4fbcf5f544",
+        "type": "debug",
+        "z": "f35383b4c5a849d4",
+        "name": "Raw Data",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 640,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "6807aa56c546e2d2",
+        "type": "change",
+        "z": "f35383b4c5a849d4",
+        "name": "Extract data safely",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "x": 570,
+        "y": 120,
+        "wires": [
+            [
+                "c492ddc1894077af"
+            ]
+        ]
+    },
+    {
+        "id": "c492ddc1894077af",
+        "type": "function",
+        "z": "f35383b4c5a849d4",
+        "name": "Split Temp/Hum",
+        "func": "if (!msg.payload) return null;\n\n// Force parse if payload is still a string\nif (typeof msg.payload === \"string\") {\n    try {\n        msg.payload = JSON.parse(msg.payload);\n    } catch (e) {\n        node.warn(\"Invalid JSON\");\n        return null;\n    }\n}\n\nconst data = msg.payload.d || msg.payload;\nif (!data) return null;\n\nconst temperature = data.temp ?? data.temperature;\nconst humidity = data.humidity ?? data.hum;\n\nif (typeof temperature === 'undefined' || typeof humidity === 'undefined') {\n    node.warn('Missing temperature or humidity');\n    return null;\n}\n\nreturn [\n    { payload: temperature },\n    { payload: humidity }\n];\n",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 120,
+        "wires": [
+            [
+                "63ecb8c99d01f424"
+            ],
+            [
+                "8a4156ed57171b37"
+            ]
+        ]
+    },
+    {
+        "id": "63ecb8c99d01f424",
+        "type": "ui_chart",
+        "z": "f35383b4c5a849d4",
+        "name": "Temperature",
+        "group": "grp_env",
+        "order": 1,
+        "width": "",
+        "height": "",
+        "label": "Temperature (°C)",
+        "chartType": "line",
+        "xformat": "dd HH:mm",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "50",
+        "removeOlder": "60",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "cutout": "",
+        "useOneColor": false,
+        "useUTC": true,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 980,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "8a4156ed57171b37",
+        "type": "ui_chart",
+        "z": "f35383b4c5a849d4",
+        "name": "Humidity",
+        "group": "grp_env",
+        "order": 2,
+        "width": "",
+        "height": "",
+        "label": "Humidity (%)",
+        "chartType": "line",
+        "xformat": "dd HH:mm",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "100",
+        "removeOlder": "60",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "cutout": "",
+        "useOneColor": false,
+        "useUTC": true,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 980,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0fa5d6a22f07b157",
+        "type": "file",
+        "z": "f35383b4c5a849d4",
+        "name": "Store locally",
+        "filename": "envdata.json",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 810,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2fe149e2f7b7468b",
+        "type": "function",
+        "z": "f35383b4c5a849d4",
+        "name": "Temp → LED color",
+        "func": "if (!msg.payload) return null;\nconst data = msg.payload.d || msg.payload;\nconst t = data.temp ?? data.temperature;\nif (typeof t === 'undefined') return null;\n\nlet color = { r: 0, g: 255, b: 0 };\nif (t >= 28 && t < 32) color = { r: 255, g: 165, b: 0 };\nelse if (t >= 32) color = { r: 255, g: 0, b: 0 };\n\nmsg.topic = 'lab/cmd/led';\nmsg.payload = color;\nreturn msg;",
+        "outputs": 1,
+        "x": 830,
+        "y": 220,
+        "wires": [
+            [
+                "9b5b198e5e227ee0"
+            ]
+        ]
+    },
+    {
+        "id": "9b5b198e5e227ee0",
+        "type": "mqtt out",
+        "z": "f35383b4c5a849d4",
+        "name": "LED Control",
+        "topic": "",
+        "broker": "mqtt_broker_1",
+        "x": 1070,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "ff6baf222bdd86e0",
+        "type": "ui_button",
+        "z": "f35383b4c5a849d4",
+        "name": "Show History",
+        "group": "grp_env",
+        "order": 3,
+        "width": "",
+        "height": "",
+        "passthru": false,
+        "label": "Show Historical Data",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "1",
+        "payloadType": "num",
+        "topic": "",
+        "topicType": "str",
+        "x": 130,
+        "y": 400,
+        "wires": [
+            [
+                "a3c43e3d8bb8a828"
+            ]
+        ]
+    },
+    {
+        "id": "a3c43e3d8bb8a828",
+        "type": "file in",
+        "z": "f35383b4c5a849d4",
+        "name": "Read stored data",
+        "filename": "envdata.json",
+        "format": "utf8",
+        "sendError": false,
+        "x": 350,
+        "y": 400,
+        "wires": [
+            [
+                "b2c88558a784b83f"
+            ]
+        ]
+    },
+    {
+        "id": "b2c88558a784b83f",
+        "type": "function",
+        "z": "f35383b4c5a849d4",
+        "name": "Format for chart",
+        "func": "let lines = msg.payload.trim().split(/\\n/);\nlet temps = [];\nlines.slice(-20).forEach(l=>{\n try{\n  let r=JSON.parse(l);\n  let d=r.d || r;\n  temps.push({x:new Date(),y:d.temp||d.temperature});\n }catch(e){}\n});\nmsg.payload=[{series:['temp'],data:[temps],labels:[]}];\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 400,
+        "wires": [
+            [
+                "2fcfc43fc9932681"
+            ]
+        ]
+    },
+    {
+        "id": "2fcfc43fc9932681",
+        "type": "ui_chart",
+        "z": "f35383b4c5a849d4",
+        "name": "Historical Temperature",
+        "group": "grp_env",
+        "order": 4,
+        "width": "",
+        "height": "",
+        "label": "Historical Temp (°C)",
+        "chartType": "line",
+        "xformat": "dd HH:mm",
+        "nodata": "",
+        "dot": true,
+        "ymin": "0",
+        "ymax": "50",
+        "removeOlder": "60",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "cutout": "",
+        "useOneColor": false,
+        "useUTC": true,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 940,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "faf0d41075501930",
+        "type": "ui_numeric",
+        "z": "f35383b4c5a849d4",
+        "name": "Interval input",
+        "label": "Reporting Interval (sec)",
+        "tooltip": "",
+        "group": "grp_ctrl",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "wrap": false,
+        "passthru": true,
+        "topic": "",
+        "topicType": "str",
+        "format": "{{value}}",
+        "min": 1,
+        "max": 60,
+        "step": 1,
+        "className": "",
+        "x": 130,
+        "y": 540,
+        "wires": [
+            [
+                "cf77efb51ceaa63e"
+            ]
+        ]
+    },
+    {
+        "id": "cf77efb51ceaa63e",
+        "type": "function",
+        "z": "f35383b4c5a849d4",
+        "name": "Create interval cmd",
+        "func": "msg.topic = \"lab/cmd/interval\";\nmsg.payload = { interval: Number(msg.payload) };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 540,
+        "wires": [
+            [
+                "fe9f2f8d04204615"
+            ]
+        ]
+    },
+    {
+        "id": "fe9f2f8d04204615",
+        "type": "mqtt out",
+        "z": "f35383b4c5a849d4",
+        "name": "Send command",
+        "topic": "",
+        "broker": "mqtt_broker_1",
+        "x": 600,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "a5adc97533a6ab80",
+        "type": "ui_spacer",
+        "z": "f35383b4c5a849d4",
+        "name": "spacer",
+        "group": "grp_ctrl",
+        "order": 2,
+        "width": 1,
+        "height": 1
+    },
+    {
+        "id": "mqtt_broker_1",
+        "type": "mqtt-broker",
+        "name": "Test MQTT",
+        "broker": "test.mosquitto.org",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true
+    },
+    {
+        "id": "grp_env",
+        "type": "ui_group",
+        "name": "ESP32 Live Dashboard - Meera",
+        "tab": "tab_envdash",
+        "order": 1,
+        "disp": true,
+        "width": "7",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "grp_ctrl",
+        "type": "ui_group",
+        "name": "Device Control",
+        "tab": "tab_envdash",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": true,
+        "className": ""
+    },
+    {
+        "id": "tab_envdash",
+        "type": "ui_tab",
+        "name": "Env Dashboard",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "85028fbc8239a4d0",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6"
+        }
+    }
+]
